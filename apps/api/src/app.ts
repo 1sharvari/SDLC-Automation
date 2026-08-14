@@ -1,18 +1,21 @@
+import express, { Express, json } from 'express';
 import cors from 'cors';
-import express, { type Request, type Response } from 'express';
+import { authRouter } from './modules/auth/auth.routes';
 
-export const createApp = () => {
+export function createApp(): Express {
   const app = express();
-  app.use(cors({ origin: process.env.WEB_ORIGIN ?? 'http://localhost:4200' }));
-  app.use(express.json());
 
-  app.get('/api/v1/health', (_request: Request, response: Response) => {
-    response.status(200).json({ status: 'ok' });
-  });
+  app.use(cors());
+  app.use(json());
 
-  app.use((_request: Request, response: Response) => {
-    response.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found' } });
+  // API Routes
+  app.use('/api/v1/auth', authRouter);
+
+  app.get('/health', (_req, res) => {
+    res.status(200).json({ status: 'ok' });
   });
 
   return app;
-};
+}
+
+export const app = createApp();
