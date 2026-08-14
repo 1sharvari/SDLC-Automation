@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-14T10:23:48.694Z",
+  "generatedAt": "2026-08-14T11:22:03.086Z",
   "mode": "live",
   "source": "requirements/requirements.md",
-  "checksum": "f9bb7720f4dfe935761740b3992158fbe98c06cf6a4fcd4859e0c9d68214e838",
+  "checksum": "11c336dfd6a89684d900baf5843645b653a9923ca5ea1543472d7e23f1ed21fb",
   "nextAgent": "Business",
   "requirements": [
     {
@@ -28,16 +28,11 @@
           "given": "valid credentials Admin and Admin@123",
           "when": "submitting the login form",
           "then": "authenticate the user, save user state in localStorage, and navigate to `/home`."
-        },
-        {
-          "given": "invalid credentials",
-          "when": "submitting the login form",
-          "then": "display an error message and remain on `/login`."
         }
       ],
       "readiness": "ready-for-business-agent",
       "blockers": [],
-      "proposedStoryPoints": 5,
+      "proposedStoryPoints": 3,
       "proposedLabels": [
         "rq-003",
         "angular",
