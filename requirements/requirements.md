@@ -25,30 +25,6 @@
 - **Priority:** Must
 - **Design / API references:** POST `/api/v1/auth/login`
 
-### RQ-002: Shopping App Home Page
-
-- **Problem / business value:** Provide users with a simple shopping homepage to discover products and start shopping.
-- **Users / roles:** Customer, Admin
-- **User journey:** User logs in -> redirected to `/home` -> views products/categories -> selects a product or category.
-- **Functional requirements:**
-  - Display shopping app logo/name and navigation menu.
-  - Display search bar.
-  - Display product categories.
-  - Display featured/recommended products with image, name, price, and Add to Cart button.
-  - Display cart icon with item count.
-  - Display logged-in username and Logout option.
-- **Acceptance criteria (Given / When / Then):**
-  - Given a logged-in user When navigating to `/home` Then the shopping homepage should be displayed.
-  - Given the homepage is displayed When viewing the page Then categories, search bar, and featured products should be visible.
-  - Given a product is displayed When the user clicks Add to Cart Then the product should be added to the cart and the cart count should update.
-  - Given a user enters a product name in the search bar When searching Then matching products should be displayed.
-  - Given a user clicks a category When selecting a category filter Then products belonging to that category should be displayed.
-  - Given a user clicks the cart icon When clicking the cart Then the user should be navigated to the cart page.
-  - Given an unauthenticated user When accessing `/home` Then the user should be redirected to `/login`.
-- **Out of scope:** Payment, checkout, order management, product reviews.
-- **Dependencies / assumptions:** Angular frontend (`apps/web`), Node API (`apps/api`), authentication from RQ-001.
-- **Priority:** Must
-- **Design / API references:** GET `/api/v1/products`, GET `/api/v1/categories`
 
 ## Decisions log
 - 2026-08-14: Initial requirement for User Login POC with Admin / Admin@123 credentials.

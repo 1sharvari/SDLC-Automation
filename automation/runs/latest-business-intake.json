@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-14T12:32:33.955Z",
+  "generatedAt": "2026-08-14T12:39:41.697Z",
   "mode": "live",
   "source": "requirements/requirements.md",
-  "checksum": "f9e3869a650becc451493e73f8201e1bf03494a01ed69812f798f51b092c2831",
+  "checksum": "fffb65d535d573a25dd72c773e09caa6d23a84933ec287a13322ffa7619cfd21",
   "nextAgent": "Business",
   "requirements": [
     {
@@ -35,61 +35,6 @@
       "proposedStoryPoints": 3,
       "proposedLabels": [
         "rq-001",
-        "angular",
-        "node",
-        "e2e"
-      ],
-      "proposedAction": "create-or-update-jira-hierarchy"
-    },
-    {
-      "id": "RQ-002",
-      "title": "Shopping App Home Page",
-      "businessValue": "Provide users with a simple shopping homepage to discover products and start shopping.",
-      "users": "Customer, Admin",
-      "userJourney": "User logs in -> redirected to `/home` -> views products/categories -> selects a product or category.",
-      "priority": "Must",
-      "acceptanceCriteria": [
-        {
-          "given": "a logged-in user",
-          "when": "navigating to `/home`",
-          "then": "the shopping homepage should be displayed."
-        },
-        {
-          "given": "the homepage is displayed",
-          "when": "viewing the page",
-          "then": "categories, search bar, and featured products should be visible."
-        },
-        {
-          "given": "a product is displayed",
-          "when": "the user clicks Add to Cart",
-          "then": "the product should be added to the cart and the cart count should update."
-        },
-        {
-          "given": "a user enters a product name in the search bar",
-          "when": "searching",
-          "then": "matching products should be displayed."
-        },
-        {
-          "given": "a user clicks a category",
-          "when": "selecting a category filter",
-          "then": "products belonging to that category should be displayed."
-        },
-        {
-          "given": "a user clicks the cart icon",
-          "when": "clicking the cart",
-          "then": "the user should be navigated to the cart page."
-        },
-        {
-          "given": "an unauthenticated user",
-          "when": "accessing `/home`",
-          "then": "the user should be redirected to `/login`."
-        }
-      ],
-      "readiness": "ready-for-business-agent",
-      "blockers": [],
-      "proposedStoryPoints": 8,
-      "proposedLabels": [
-        "rq-002",
         "angular",
         "node",
         "e2e"
