@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.schemastore.org/mcp.json",
+  "description": "Workspace connector manifest. Codex-level server installation and OAuth authorization are intentionally external to source control.",
+  "connections": [
+    {
+      "name": "jira",
+      "recommendedConnector": "Atlassian Rovo",
+      "status": "disabled-until-authorized",
+      "scopesRequired": [
+        "read project and board metadata",
+        "search, create, and update issues",
+        "set estimates, labels, issue links, and comments",
+        "transition issues on the selected board"
+      ],
+      "allowedResources": ["https://qa-shop.atlassian.net", "SHOP", "board 2"]
+    },
+    {
+      "name": "github",
+      "recommendedConnector": "GitHub",
+      "status": "disabled-until-authorized",
+      "scopesRequired": [
+        "read repository and pull requests",
+        "create branches and push commits",
+        "create pull requests and read/write reviews",
+        "read workflow/status checks"
+      ],
+      "allowedResources": ["1sharvari/SDLC-Automation", "main"]
+    }
+  ]
+}

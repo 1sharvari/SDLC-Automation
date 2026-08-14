@@ -1,0 +1,27 @@
+jira:
+  projectKey: ${JIRA_PROJECT_KEY}
+  boardId: ${JIRA_BOARD_ID}
+  statuses:
+    toDo: "To Do"
+    devReady: "Dev Ready"
+    inDev: "In Dev"
+    codeReview: "In Review"
+    qaReady: "QA Ready"
+    qaPass: "QA Pass"
+    deploymentReady: "Deployment Ready"
+    done: "Done"
+github:
+  repository: ${GITHUB_REPOSITORY}
+  baseBranch: ${GITHUB_BASE_BRANCH}
+branchPattern: "<TICKET_ID>-<feature-name>"
+quality:
+  minimumCoverage:
+    lines: 80
+    branches: 80
+pullRequests:
+  approval:
+    mode: "agent-sign-off-comment"
+    requirements:
+      - "The agent must complete an acceptance-criteria and quality-check review."
+      - "The agent must leave a PR comment headed 'Agent review: approved'."
+      - "This is a POC sign-off, not an independent GitHub approval."
