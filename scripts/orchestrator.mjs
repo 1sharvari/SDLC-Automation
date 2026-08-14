@@ -138,18 +138,18 @@ async function addJiraComment(issueKey, commentText) {
 // AI Development Agent: Generate Code via Gemini API
 async function generateCodeWithGemini(requirement, jiraIssueKey) {
   if (!geminiApiKey) {
-    console.log('   ⚠️ No GEMINI_API_KEY found in .env. Skipping autonomous AI code generation.');
-    console.log('   👉 Add GEMINI_API_KEY=<your_key> to .env to enable autonomous code generation.');
-    return [];
+    console.error('   ❌ Error: GEMINI_API_KEY is missing. Cannot perform autonomous code development.');
+    throw new Error('GEMINI_API_KEY is required for autonomous code development.');
   }
 
-  console.log(`   🤖 [Gemini Development Agent] Prompting AI model to generate code for [${requirement.id}]...`);
+  console.log(`   🤖 [Gemini Development Agent] Generating TypeScript code for [${requirement.id}]...`);
 
   const prompt = `You are an expert full-stack TypeScript engineer acting as an autonomous Development Agent for SDLC Automation.
-Enforce docs/coding-standards.md:
+Follow docs/coding-standards.md:
 - Frontend: Angular standalone components, signals, reactive forms, clean SCSS, accessible test-ids (data-testid).
-- Backend: Node.js + Express under /api/v1, modular architecture (modules/<feature>/), Zod validation schemas, pure services, thin controllers.
+- Backend: Node.js + Express under /api/v1, modular architecture (apps/api/src/modules/<feature>/), Zod validation schemas, pure services, thin controllers.
 - Tests: Unit tests with vitest and E2E specs with Playwright.
+- CRITICAL PLAYWRIGHT RULE: In Playwright tests, NEVER call page.evaluate(() => localStorage...) on about:blank. ALWAYS call await page.goto('/login') or your target page FIRST before accessing localStorage or DOM elements.
 
 Requirement to Implement:
 ID: ${requirement.id}
@@ -161,9 +161,9 @@ Acceptance Criteria:
 ${requirement.acceptanceCriteria.map((c, i) => `AC${i + 1}: Given ${c.given} When ${c.when} Then ${c.then}`).join('\n')}
 
 Generate the complete, production-ready TypeScript code files needed to implement this story across:
-1. apps/api/src/modules/... (routes, controllers, services, dtos, unit tests)
+1. apps/api/src/modules/... (routes, controllers, services, dtos, and unit tests)
 2. Update apps/api/src/app.ts to mount the new router
-3. apps/web/src/app/features/... (component .ts, .html, .scss, services, unit tests)
+3. apps/web/src/app/features/... (component .ts, .html, .scss, services, and unit tests)
 4. Update apps/web/src/app/app.routes.ts to add feature route
 5. tests/e2e/specs/${jiraIssueKey}.${requirement.id.toLowerCase()}.spec.ts (Playwright test suite covering all acceptance criteria)
 
@@ -216,7 +216,7 @@ Respond ONLY with a valid JSON array of objects with "path" (relative to workspa
     }
   }
 
-  return [];
+  throw new Error('Gemini failed to generate code files.');
 }
 
 async function runSDLC() {
@@ -225,7 +225,7 @@ async function runSDLC() {
   console.log(`📌  Jira Site: ${jiraBaseUrl} (${jiraEmail})`);
   console.log(`📌  Jira Project: ${jiraProjectKey} | Board: ${env.JIRA_BOARD_ID || '2'}`);
   console.log(`📌  GitHub Repo: ${githubRepo} [Base Branch: ${githubBaseBranch}]`);
-  console.log(`🧠  AI Agent Engine: ${geminiApiKey ? '🟢 Gemini API Active' : '🟡 Offline (No API Key)'}`);
+  console.log(`🧠  AI Engine: Gemini API Active`);
   console.log(`📁  Workspace: ${rootDir}`);
   console.log('======================================================\n');
 
@@ -246,7 +246,6 @@ async function runSDLC() {
     process.exit(1);
   }
 
-  // Select requirement: CLI argument (e.g. RQ-002) or latest requirement
   const requestedId = process.argv[2]?.toUpperCase();
   const requirement = requestedId
     ? allReqs.find((r) => r.id.toUpperCase() === requestedId)
@@ -334,19 +333,30 @@ async function runSDLC() {
   }
 
   // Generate code via Gemini API
-  await generateCodeWithGemini(requirement, jiraIssueKey);
+  try {
+    await generateCodeWithGemini(requirement, jiraIssueKey);
+  } catch (err) {
+    console.error(`   ❌ Code generation failed: ${err.message}`);
+    await addJiraComment(jiraIssueKey, `Development Agent failed to generate code: ${err.message}\nTicket remains in In Dev.`);
+    process.exit(1);
+  }
 
   console.log('   - Enforcing Standards: docs/coding-standards.md');
   console.log('   - Running Unit Tests & Coverage Verification (>=80%)...');
 
+  let unitTestsPassed = false;
   try {
     execSync('npm run test:unit', { cwd: rootDir, stdio: 'inherit' });
-    console.log('   ✅ Unit tests executed successfully!');
+    unitTestsPassed = true;
+    console.log('   ✅ All unit tests passed with >= 80% coverage!');
   } catch (err) {
-    console.warn('   ℹ️ Unit test runner evaluated.');
+    console.error('   ❌ Unit tests FAILED.');
+    await addJiraComment(jiraIssueKey, `Development Agent unit tests failed (coverage threshold not met). Ticket remains in "In Dev".`);
+    console.log(`   🛑 Guardrail Halt: Unit tests failed. Jira ticket ${jiraIssueKey} remains in "In Dev".`);
+    process.exit(1);
   }
 
-  // Push branch to GitHub first (Option A)
+  // Push branch to GitHub
   console.log(`   - Pushing branch "${branchName}" to GitHub (${githubRepo})...`);
   try {
     const pushRemoteUrl = `https://${githubToken}@github.com/${githubRepo}.git`;
@@ -397,16 +407,21 @@ async function runSDLC() {
   console.log('🧪 [STEP 4/4] Executing QA Agent (agents/qa.md)...');
   console.log(`   - Executing Playwright E2E Suite for ${jiraIssueKey}...`);
 
+  let e2ePassed = false;
   try {
     execSync('npm run test:e2e', { cwd: rootDir, stdio: 'inherit' });
-    console.log('   ✅ Playwright E2E test runner executed!');
+    e2ePassed = true;
+    console.log('   ✅ All Playwright E2E tests passed!');
   } catch (err) {
-    console.warn('   ℹ️ Playwright runner completed.');
+    console.error('   ❌ Playwright E2E tests FAILED.');
+    await addJiraComment(jiraIssueKey, `QA Agent Playwright E2E tests failed. Ticket remains in "QA Ready" until resolved.`);
+    console.log(`   🛑 Guardrail Halt: E2E tests failed. Jira ticket ${jiraIssueKey} remains in "QA Ready".`);
+    process.exit(1);
   }
 
   await addJiraComment(
     jiraIssueKey,
-    `QA Agent verified test suite.\nAll ${requirement.acceptanceCriteria.length} acceptance criteria checked.\nStatus: Ready for Deployment 🚀`
+    `QA Agent verified test suite.\nAll ${requirement.acceptanceCriteria.length} acceptance criteria checked and passed.\nStatus: Ready for Deployment 🚀`
   );
 
   await transitionJiraIssue(jiraIssueKey, 'Deployment Ready');
@@ -435,6 +450,6 @@ async function runSDLC() {
 }
 
 runSDLC().catch((err) => {
-  console.error('❌ Orchestrator Error:', err);
+  console.error('❌ Orchestrator Error:', err.message);
   process.exit(1);
 });
