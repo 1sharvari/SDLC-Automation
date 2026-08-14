@@ -10,6 +10,10 @@ export const createApp = (): Express => {
     response.status(200).json({ status: 'ok' });
   });
 
+  app.use((_request: Request, response: Response) => {
+    response.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found' } });
+  });
+
   return app;
 };
 
