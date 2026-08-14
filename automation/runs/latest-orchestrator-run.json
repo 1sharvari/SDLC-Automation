@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-08-14T09:55:58.534Z",
+  "timestamp": "2026-08-14T10:05:44.085Z",
   "requirementId": "RQ-001",
   "jiraIssueKey": "SHOP-5",
   "jiraUrl": "https://qa-shop.atlassian.net/browse/SHOP-5",
   "branchName": "SHOP-5-user-login-authentication",
-  "pullRequestUrl": null,
+  "pullRequestUrl": "https://github.com/1sharvari/SDLC-Automation/pull/2",
   "storyPoints": 5,
   "currentState": "Deployment Ready"
 }
