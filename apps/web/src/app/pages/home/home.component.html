@@ -1,0 +1,128 @@
+<div class="home-layout" data-testid="home-page">
+  <!-- Header Navigation -->
+  <header class="navbar" data-testid="navbar">
+    <div class="navbar-brand" data-testid="navbar-brand">
+      <span class="brand-icon">🛍️</span>
+      <span class="brand-title">ShopZone</span>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="search-container" data-testid="search-container">
+      <input
+        type="text"
+        data-testid="search-input"
+        class="search-input"
+        placeholder="Search for products, brands, and more..."
+        [formControl]="searchControl"
+      />
+      <span class="search-icon">🔍</span>
+    </div>
+
+    <!-- Actions -->
+    <div class="navbar-actions">
+      <button
+        class="cart-button"
+        data-testid="cart-button"
+        (click)="navigateToCart()"
+        aria-label="Shopping Cart"
+      >
+        <span class="cart-icon">🛒</span>
+        <span class="cart-label">Cart</span>
+        <span class="cart-badge" data-testid="cart-count">{{
+          cart().totalQuantity
+        }}</span>
+      </button>
+      <button class="logout-button" data-testid="logout-button" (click)="logout()">
+        Logout
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="main-content">
+    <!-- Categories Filter Bar -->
+    <section class="categories-section" data-testid="categories-container">
+      <h2 class="section-title">Categories</h2>
+      <div class="category-chips" data-testid="category-pills">
+        @for (cat of categories(); track cat) {
+          <button
+            type="button"
+            class="category-chip"
+            [class.active]="selectedCategory() === cat"
+            [attr.data-testid]="'category-pill-' + cat.toLowerCase().replace(' ', '-')"
+            (click)="selectCategory(cat)"
+          >
+            {{ cat }}
+          </button>
+        }
+      </div>
+    </section>
+
+    <!-- Featured Products / Catalog Section -->
+    <section class="products-section" data-testid="products-section">
+      <div class="section-header">
+        <h2 class="section-title" data-testid="catalog-title">
+          @if (selectedCategory() === 'All') {
+            Featured Products
+          } @else {
+            {{ selectedCategory() }} Products
+          }
+        </h2>
+        <span class="products-count" data-testid="products-count">
+          Showing {{ products().length }} item{{ products().length === 1 ? '' : 's' }}
+        </span>
+      </div>
+
+      @if (isLoading()) {
+        <div class="loading-indicator" data-testid="loading-spinner">
+          <p>Loading products...</p>
+        </div>
+      } @else if (products().length === 0) {
+        <div class="no-products" data-testid="no-products-message">
+          <p>No products found matching your criteria.</p>
+        </div>
+      } @else {
+        <div class="products-grid" data-testid="products-grid">
+          @for (product of products(); track product.id) {
+            <div class="product-card" [attr.data-testid]="'product-card-' + product.id">
+              <div class="product-image-wrapper">
+                <img
+                  [src]="product.imageUrl"
+                  [alt]="product.name"
+                  class="product-image"
+                  data-testid="product-image"
+                />
+                @if (product.isFeatured) {
+                  <span class="badge-featured" data-testid="featured-badge">Featured</span>
+                }
+              </div>
+              <div class="product-details">
+                <span class="product-category" data-testid="product-category">{{
+                  product.category
+                }}</span>
+                <h3 class="product-title" data-testid="product-name">{{
+                  product.name
+                }}</h3>
+                <p class="product-description" data-testid="product-description">{{
+                  product.description
+                }}</p>
+                <div class="product-footer">
+                  <span class="product-price" data-testid="product-price">
+                    ${{ product.price.toFixed(2) }}
+                  </span>
+                  <button
+                    class="btn-add-cart"
+                    [attr.data-testid]="'add-to-cart-' + product.id"
+                    (click)="addToCart(product)"
+                  >
+                    Add to Cart
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  </main>
+</div>

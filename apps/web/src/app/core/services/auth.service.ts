@@ -1,62 +1,27 @@
-import { HttpClient } from '@angular/common/http';
-import { Injectable, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
-import { Observable, catchError, map, of } from 'rxjs';
+import { Injectable, signal } from '@angular/core';
 
-export interface UserProfile {
-  id: string;
-  username: string;
-  name: string;
-  role: string;
-}
-
-export interface LoginResponse {
-  token: string;
-  user: UserProfile;
-}
-
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class AuthService {
-  private readonly http = inject(HttpClient);
-  private readonly router = inject(Router);
-  private readonly apiUrl = 'http://localhost:3000/api/v1/auth/login';
-  private readonly userSignal = signal<UserProfile | null>(this.getStoredUser());
+  private readonly tokenKey = 'auth_token';
+  public readonly isAuthenticated = signal<boolean>(this.checkToken());
 
-  public readonly currentUser = this.userSignal.asReadonly();
-  public readonly isAuthenticated = computed(() => this.userSignal() !== null);
-
-  private getStoredUser(): UserProfile | null {
-    try {
-      const stored = localStorage.getItem('user_session');
-      return stored ? JSON.parse(stored) : null;
-    } catch { return null; }
+  private checkToken(): boolean {
+    return typeof window !== 'undefined' && !!localStorage.getItem(this.tokenKey);
   }
 
-  public login(username: string, password: string): Observable<{ success: boolean; message?: string }> {
-    return this.http.post<LoginResponse>(this.apiUrl, { username, password }).pipe(
-      map((res) => {
-        this.userSignal.set(res.user);
-        localStorage.setItem('user_session', JSON.stringify(res.user));
-        localStorage.setItem('auth_token', res.token);
-        return { success: true };
-      }),
-      catchError(() => {
-        if (username === 'Admin' && password === 'Admin@123') {
-          const user: UserProfile = { id: '1', username: 'Admin', name: 'Administrator', role: 'Admin' };
-          this.userSignal.set(user);
-          localStorage.setItem('user_session', JSON.stringify(user));
-          localStorage.setItem('auth_token', 'mock-token');
-          return of({ success: true });
-        }
-        return of({ success: false, message: 'Invalid username or password' });
-      })
-    );
+  public login(token = 'dummy-jwt-token'): void {
+    localStorage.setItem(this.tokenKey, token);
+    this.isAuthenticated.set(true);
   }
 
   public logout(): void {
-    this.userSignal.set(null);
-    localStorage.removeItem('user_session');
-    localStorage.removeItem('auth_token');
-    this.router.navigate(['/login']);
+    localStorage.removeItem(this.tokenKey);
+    this.isAuthenticated.set(false);
+  }
+
+  public isUserLoggedIn(): boolean {
+    return !!localStorage.getItem(this.tokenKey);
   }
 }

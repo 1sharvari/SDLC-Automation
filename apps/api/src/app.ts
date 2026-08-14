@@ -1,20 +1,25 @@
+import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import express, { type Express, type Request, type Response } from 'express';
-import { createAuthRouter } from './modules/auth/auth.routes.js';
+import { productsRouter } from './modules/products/products.routes.js';
+import { cartRouter } from './modules/cart/cart.routes.js';
 
 export const createApp = (): Express => {
   const app = express();
-  app.use(cors({ origin: process.env.WEB_ORIGIN ?? 'http://localhost:4200' }));
+
+  app.use(cors());
   app.use(express.json());
 
-  app.get('/api/v1/health', (_request: Request, response: Response) => {
-    response.status(200).json({ status: 'ok' });
+  app.get('/api/health', (_req: Request, res: Response) => {
+    res.status(200).json({ status: 'ok' });
   });
 
-  app.use('/api/v1/auth', createAuthRouter());
+  app.use('/api/v1/products', productsRouter);
+  app.use('/api/v1/cart', cartRouter);
 
-  app.use((_request: Request, response: Response) => {
-    response.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found' } });
+  // Error handling middleware
+  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    const message = err instanceof Error ? err.message : 'Internal Server Error';
+    res.status(400).json({ success: false, message });
   });
 
   return app;
