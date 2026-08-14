@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-08-14T11:12:40.033Z",
-  "requirementId": "RQ-003",
-  "jiraIssueKey": "SHOP-9",
-  "jiraUrl": "https://qa-shop.atlassian.net/browse/SHOP-9",
-  "branchName": "SHOP-9-user-login-authentication",
-  "pullRequestUrl": null,
-  "storyPoints": 5,
+  "timestamp": "2026-08-14T12:40:30.967Z",
+  "requirementId": "RQ-001",
+  "jiraIssueKey": "SHOP-12",
+  "jiraUrl": "https://qa-shop.atlassian.net/browse/SHOP-12",
+  "branchName": "SHOP-12-user-login-authentication",
+  "pullRequestUrl": "https://github.com/1sharvari/SDLC-Automation/pull/9",
+  "storyPoints": 3,
   "currentState": "Deployment Ready"
 }
