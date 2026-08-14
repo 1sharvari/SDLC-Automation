@@ -152,7 +152,7 @@ async function runSDLC() {
   }
 
   const intake = JSON.parse(readFileSync(intakePath, 'utf8'));
-  const requirement = intake.requirements?.[0];
+  const requirement = intake.requirements?.pop();
 
   if (!requirement || requirement.readiness !== 'ready-for-business-agent') {
     console.error(`❌ Blocker: Requirement is not ready. Blockers: ${requirement?.blockers?.join(', ')}`);
