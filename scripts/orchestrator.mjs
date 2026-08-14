@@ -136,39 +136,7 @@ async function addJiraComment(issueKey, commentText) {
 }
 
 // AI Development Agent: Generate Code via Gemini API
-async function generateCodeWithGemini(requirement, jiraIssueKey) {
-  if (!geminiApiKey) {
-    console.error('   ❌ Error: GEMINI_API_KEY is missing. Cannot perform autonomous code development.');
-    throw new Error('GEMINI_API_KEY is required for autonomous code development.');
-  }
-
-  console.log(`   🤖 [Gemini Development Agent] Generating TypeScript code for [${requirement.id}]...`);
-
-  const prompt = `You are an expert full-stack TypeScript engineer acting as an autonomous Development Agent for SDLC Automation.
-Follow docs/coding-standards.md:
-- Frontend: Angular standalone components, signals, reactive forms, clean SCSS, accessible test-ids (data-testid).
-- Backend: Node.js + Express under /api/v1, modular architecture (apps/api/src/modules/<feature>/), Zod validation schemas, pure services, thin controllers.
-- Tests: Unit tests with vitest and E2E specs with Playwright.
-- CRITICAL PLAYWRIGHT RULE: In Playwright tests, NEVER call page.evaluate(() => localStorage...) on about:blank. ALWAYS call await page.goto('/login') or your target page FIRST before accessing localStorage or DOM elements.
-
-Requirement to Implement:
-ID: ${requirement.id}
-Title: ${requirement.title}
-Problem / Business Value: ${requirement.businessValue}
-Users: ${requirement.users || 'All'}
-User Journey: ${requirement.userJourney || ''}
-Acceptance Criteria:
-${requirement.acceptanceCriteria.map((c, i) => `AC${i + 1}: Given ${c.given} When ${c.when} Then ${c.then}`).join('\n')}
-
-Generate the complete, production-ready TypeScript code files needed to implement this story across:
-1. apps/api/src/modules/... (routes, controllers, services, dtos, and unit tests)
-2. Update apps/api/src/app.ts to mount the new router
-3. apps/web/src/app/features/... (component .ts, .html, .scss, services, and unit tests)
-4. Update apps/web/src/app/app.routes.ts to add feature route
-5. tests/e2e/specs/${jiraIssueKey}.${requirement.id.toLowerCase()}.spec.ts (Playwright test suite covering all acceptance criteria)
-
-Respond ONLY with a valid JSON array of objects with "path" (relative to workspace root, e.g. "apps/api/src/...") and "content" (string with code). Do not include markdown code block backticks outside the JSON.`;
-
+async function callGemini(prompt) {
   const models = ['gemini-flash-latest', 'gemini-3.7-flash', 'gemini-2.5-flash-lite', 'gemini-pro-latest'];
   for (const model of models) {
     try {
@@ -185,8 +153,6 @@ Respond ONLY with a valid JSON array of objects with "path" (relative to workspa
       });
 
       if (!res.ok) {
-        const errText = await res.text();
-        console.warn(`   ⚠️ Gemini ${model} returned ${res.status}: ${errText}`);
         continue;
       }
 
@@ -201,22 +167,93 @@ Respond ONLY with a valid JSON array of objects with "path" (relative to workspa
         cleanedText = cleanedText.replace(/^```\s*/, '').replace(/\s*```$/, '');
       }
 
-      const files = JSON.parse(cleanedText);
-      console.log(`   ✨ Gemini generated ${files.length} code files! Writing to workspace...`);
-
-      for (const file of files) {
-        const fullPath = resolve(rootDir, file.path);
-        mkdirSync(dirname(fullPath), { recursive: true });
-        writeFileSync(fullPath, file.content, 'utf8');
-        console.log(`      📄 Created/Updated: ${file.path}`);
-      }
-      return files;
+      return JSON.parse(cleanedText);
     } catch (err) {
-      console.warn(`   ⚠️ Gemini error on ${model}: ${err.message}`);
+      console.warn(`   ⚠️ Gemini ${model} notice: ${err.message}`);
     }
   }
+  throw new Error('Gemini API call failed across all models.');
+}
 
-  throw new Error('Gemini failed to generate code files.');
+async function generateCodeWithGemini(requirement, jiraIssueKey) {
+  if (!geminiApiKey) {
+    console.error('   ❌ Error: GEMINI_API_KEY is missing.');
+    throw new Error('GEMINI_API_KEY is required.');
+  }
+
+  console.log(`   🤖 [Gemini Development Agent] Generating TypeScript code for [${requirement.id}]...`);
+
+  const prompt = `You are an expert full-stack TypeScript engineer acting as an autonomous Development Agent for SDLC Automation.
+Follow docs/coding-standards.md:
+- Frontend: Angular standalone components, signals, reactive forms, clean SCSS, accessible test-ids (data-testid).
+- Backend: Node.js + Express under /api/v1, modular architecture (apps/api/src/modules/<feature>/), Zod validation schemas, pure services, thin controllers.
+- In apps/api/src/app.ts: ALWAYS export both 'export const createApp = () => ...' AND 'export const app = createApp(); export default app;'.
+- In apps/api/src/server.ts: import { createApp, app } from './app.js';
+- In Playwright tests (tests/e2e/specs/...): ALWAYS call 'await page.goto("/login")' or your target route FIRST before accessing localStorage or DOM elements. NEVER call page.evaluate on about:blank.
+- Tests: Unit tests with vitest and E2E specs with Playwright.
+
+Requirement to Implement:
+ID: ${requirement.id}
+Title: ${requirement.title}
+Problem / Business Value: ${requirement.businessValue}
+Users: ${requirement.users || 'All'}
+User Journey: ${requirement.userJourney || ''}
+Acceptance Criteria:
+${requirement.acceptanceCriteria.map((c, i) => `AC${i + 1}: Given ${c.given} When ${c.when} Then ${c.then}`).join('\n')}
+
+Generate the complete, production-ready TypeScript code files needed to implement this story:
+1. apps/api/src/modules/... (routes, controllers, services, dtos, and unit tests)
+2. Update apps/api/src/app.ts to mount the new router
+3. apps/web/src/app/features/... (component .ts, .html, .scss, services, and unit tests)
+4. Update apps/web/src/app/app.routes.ts to add feature route
+5. tests/e2e/specs/${jiraIssueKey}.${requirement.id.toLowerCase()}.spec.ts (Playwright test suite covering all acceptance criteria)
+
+Respond ONLY with a valid JSON array of objects with "path" (e.g. "apps/api/src/...") and "content" (string with code).`;
+
+  const files = await callGemini(prompt);
+  console.log(`   ✨ Gemini generated ${files.length} code files! Writing to workspace...`);
+
+  for (const file of files) {
+    const fullPath = resolve(rootDir, file.path);
+    mkdirSync(dirname(fullPath), { recursive: true });
+    writeFileSync(fullPath, file.content, 'utf8');
+    console.log(`      📄 Created/Updated: ${file.path}`);
+  }
+  return files;
+}
+
+// Autonomous Self-Healing / Auto-Fix Loop
+async function autoFixFailure(failureType, errorLog, requirement, jiraIssueKey, attempt = 1) {
+  console.log(`\n🔧 [SELF-HEALING AGENT] Attempt ${attempt}/3: Analyzing and fixing ${failureType} failure...`);
+
+  const fixPrompt = `You are an expert full-stack TypeScript engineer acting as an autonomous Self-Healing Agent.
+A failure occurred during ${failureType}.
+
+Requirement: [${requirement.id}] ${requirement.title}
+Error Log:
+${errorLog.slice(0, 3000)}
+
+Critical Rules:
+- If Playwright failed with localStorage SecurityError, ensure 'await page.goto("/login")' is called before reading localStorage.
+- If Node API failed with export/import error in app.ts/server.ts, export both 'export const createApp = () => ...' and 'export const app = createApp(); export default app;'.
+- If coverage failed, add more test cases or ensure tests cover all functions and branches.
+
+Return ONLY a JSON array of files to update with "path" and "content" to fix the error completely.`;
+
+  try {
+    const files = await callGemini(fixPrompt);
+    console.log(`   ✨ Self-healing agent generated ${files.length} fixed files! Applying fixes...`);
+    for (const file of files) {
+      const fullPath = resolve(rootDir, file.path);
+      mkdirSync(dirname(fullPath), { recursive: true });
+      writeFileSync(fullPath, file.content, 'utf8');
+      console.log(`      🛠️ Fixed: ${file.path}`);
+    }
+    return true;
+  } catch (err) {
+    console.warn(`   ⚠️ Self-healing generation failed: ${err.message}`);
+    return false;
+  }
 }
 
 async function runSDLC() {
@@ -225,7 +262,7 @@ async function runSDLC() {
   console.log(`📌  Jira Site: ${jiraBaseUrl} (${jiraEmail})`);
   console.log(`📌  Jira Project: ${jiraProjectKey} | Board: ${env.JIRA_BOARD_ID || '2'}`);
   console.log(`📌  GitHub Repo: ${githubRepo} [Base Branch: ${githubBaseBranch}]`);
-  console.log(`🧠  AI Engine: Gemini API Active`);
+  console.log(`🧠  AI Engine: Gemini API Active with Self-Healing`);
   console.log(`📁  Workspace: ${rootDir}`);
   console.log('======================================================\n');
 
@@ -317,7 +354,7 @@ async function runSDLC() {
   await transitionJiraIssue(jiraIssueKey, 'Dev Ready');
   console.log(`   ✅ Business Agent Complete. Issue ${jiraIssueKey} is in "Dev Ready".\n`);
 
-  // STEP 3: Development Agent - Branch, Gemini Code Gen, Unit Tests, Push, PR, Review
+  // STEP 3: Development Agent - Branch, Code Gen, Self-Healing Unit Tests, Push, PR
   console.log('💻 [STEP 3/4] Executing Development Agent (agents/development.md)...');
   await transitionJiraIssue(jiraIssueKey, 'In Dev');
 
@@ -332,12 +369,12 @@ async function runSDLC() {
     console.warn(`   ℹ️ Branch notice: ${err.message}`);
   }
 
-  // Generate code via Gemini API
+  // Generate code via Gemini
   try {
     await generateCodeWithGemini(requirement, jiraIssueKey);
   } catch (err) {
     console.error(`   ❌ Code generation failed: ${err.message}`);
-    await addJiraComment(jiraIssueKey, `Development Agent failed to generate code: ${err.message}\nTicket remains in In Dev.`);
+    await addJiraComment(jiraIssueKey, `Development Agent failed to generate code: ${err.message}`);
     process.exit(1);
   }
 
@@ -345,14 +382,24 @@ async function runSDLC() {
   console.log('   - Running Unit Tests & Coverage Verification (>=80%)...');
 
   let unitTestsPassed = false;
-  try {
-    execSync('npm run test:unit', { cwd: rootDir, stdio: 'inherit' });
-    unitTestsPassed = true;
-    console.log('   ✅ All unit tests passed with >= 80% coverage!');
-  } catch (err) {
-    console.error('   ❌ Unit tests FAILED.');
-    await addJiraComment(jiraIssueKey, `Development Agent unit tests failed (coverage threshold not met). Ticket remains in "In Dev".`);
-    console.log(`   🛑 Guardrail Halt: Unit tests failed. Jira ticket ${jiraIssueKey} remains in "In Dev".`);
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      execSync('npm run test:unit', { cwd: rootDir, stdio: 'inherit' });
+      unitTestsPassed = true;
+      console.log('   ✅ All unit tests passed with >= 80% coverage!');
+      break;
+    } catch (err) {
+      console.warn(`   ⚠️ Unit test attempt ${attempt} failed.`);
+      if (attempt < 3) {
+        const errorOutput = err.stdout?.toString() || err.stderr?.toString() || err.message;
+        await autoFixFailure('Unit Tests & Coverage', errorOutput, requirement, jiraIssueKey, attempt);
+      }
+    }
+  }
+
+  if (!unitTestsPassed) {
+    console.error('   ❌ Unit tests failed after 3 self-healing attempts.');
+    await addJiraComment(jiraIssueKey, `Development Agent unit tests failed after 3 fix attempts. Ticket remains in "In Dev".`);
     process.exit(1);
   }
 
@@ -403,19 +450,29 @@ async function runSDLC() {
   await transitionJiraIssue(jiraIssueKey, 'QA Ready');
   console.log(`   ✅ Development Agent Complete. Issue ${jiraIssueKey} moved to "QA Ready".\n`);
 
-  // STEP 4: QA Agent - Playwright Tests & Deployment Ready
+  // STEP 4: QA Agent - Playwright Tests & Self-Healing & Deployment Ready
   console.log('🧪 [STEP 4/4] Executing QA Agent (agents/qa.md)...');
   console.log(`   - Executing Playwright E2E Suite for ${jiraIssueKey}...`);
 
   let e2ePassed = false;
-  try {
-    execSync('npm run test:e2e', { cwd: rootDir, stdio: 'inherit' });
-    e2ePassed = true;
-    console.log('   ✅ All Playwright E2E tests passed!');
-  } catch (err) {
-    console.error('   ❌ Playwright E2E tests FAILED.');
-    await addJiraComment(jiraIssueKey, `QA Agent Playwright E2E tests failed. Ticket remains in "QA Ready" until resolved.`);
-    console.log(`   🛑 Guardrail Halt: E2E tests failed. Jira ticket ${jiraIssueKey} remains in "QA Ready".`);
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      execSync('npm run test:e2e', { cwd: rootDir, stdio: 'inherit' });
+      e2ePassed = true;
+      console.log('   ✅ All Playwright E2E tests passed!');
+      break;
+    } catch (err) {
+      console.warn(`   ⚠️ Playwright E2E attempt ${attempt} failed.`);
+      if (attempt < 3) {
+        const errorOutput = err.stdout?.toString() || err.stderr?.toString() || err.message;
+        await autoFixFailure('Playwright E2E Tests', errorOutput, requirement, jiraIssueKey, attempt);
+      }
+    }
+  }
+
+  if (!e2ePassed) {
+    console.error('   ❌ Playwright E2E tests failed after 3 self-healing attempts.');
+    await addJiraComment(jiraIssueKey, `QA Agent Playwright E2E tests failed after 3 fix attempts. Ticket remains in "QA Ready".`);
     process.exit(1);
   }
 
