@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-08-14T09:55:58.534Z",
-  "requirementId": "RQ-001",
-  "jiraIssueKey": "SHOP-5",
-  "jiraUrl": "https://qa-shop.atlassian.net/browse/SHOP-5",
-  "branchName": "SHOP-5-user-login-authentication",
+  "timestamp": "2026-08-14T10:24:01.702Z",
+  "requirementId": "RQ-003",
+  "jiraIssueKey": "SHOP-7",
+  "jiraUrl": "https://qa-shop.atlassian.net/browse/SHOP-7",
+  "branchName": "SHOP-7-user-login-authentication",
   "pullRequestUrl": null,
   "storyPoints": 5,
   "currentState": "Deployment Ready"

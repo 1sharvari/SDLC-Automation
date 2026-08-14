@@ -169,7 +169,7 @@ Generate the complete, production-ready TypeScript code files needed to implemen
 
 Respond ONLY with a valid JSON array of objects with "path" (relative to workspace root, e.g. "apps/api/src/...") and "content" (string with code). Do not include markdown code block backticks outside the JSON.`;
 
-  const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+  const models = ['gemini-flash-latest', 'gemini-3.7-flash', 'gemini-2.5-flash-lite', 'gemini-pro-latest'];
   for (const model of models) {
     try {
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, {
@@ -194,7 +194,14 @@ Respond ONLY with a valid JSON array of objects with "path" (relative to workspa
       const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!rawText) continue;
 
-      const files = JSON.parse(rawText);
+      let cleanedText = rawText.trim();
+      if (cleanedText.startsWith('```json')) {
+        cleanedText = cleanedText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanedText.startsWith('```')) {
+        cleanedText = cleanedText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+
+      const files = JSON.parse(cleanedText);
       console.log(`   ✨ Gemini generated ${files.length} code files! Writing to workspace...`);
 
       for (const file of files) {
