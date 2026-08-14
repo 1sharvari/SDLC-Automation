@@ -37,6 +37,8 @@ const githubToken = env.GITHUB_TOKEN || env.GITHUB_PERSONAL_ACCESS_TOKEN;
 const githubRepo = env.GITHUB_REPOSITORY || '1sharvari/SDLC-Automation';
 const githubBaseBranch = env.GITHUB_BASE_BRANCH || 'main';
 
+const geminiApiKey = env.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+
 // Jira REST API Helper
 async function jiraRequest(path, method = 'GET', body = null) {
   const url = `${jiraBaseUrl.replace(/\/$/, '')}/rest/api/3${path}`;
@@ -98,7 +100,7 @@ async function transitionJiraIssue(issueKey, targetStatusName) {
         t.to?.name?.toLowerCase() === targetStatusName.toLowerCase()
     );
     if (!target) {
-      console.log(`   ℹ️ Note: Transition to "${targetStatusName}" evaluated.`);
+      console.log(`   ℹ️ Jira issue ${issueKey} transition "${targetStatusName}" evaluated.`);
       return false;
     }
     await jiraRequest(`/issue/${issueKey}/transitions`, 'POST', {
@@ -133,12 +135,90 @@ async function addJiraComment(issueKey, commentText) {
   }
 }
 
+// AI Development Agent: Generate Code via Gemini API
+async function generateCodeWithGemini(requirement, jiraIssueKey) {
+  if (!geminiApiKey) {
+    console.log('   ⚠️ No GEMINI_API_KEY found in .env. Skipping autonomous AI code generation.');
+    console.log('   👉 Add GEMINI_API_KEY=<your_key> to .env to enable autonomous code generation.');
+    return [];
+  }
+
+  console.log(`   🤖 [Gemini Development Agent] Prompting AI model to generate code for [${requirement.id}]...`);
+
+  const prompt = `You are an expert full-stack TypeScript engineer acting as an autonomous Development Agent for SDLC Automation.
+Enforce docs/coding-standards.md:
+- Frontend: Angular standalone components, signals, reactive forms, clean SCSS, accessible test-ids (data-testid).
+- Backend: Node.js + Express under /api/v1, modular architecture (modules/<feature>/), Zod validation schemas, pure services, thin controllers.
+- Tests: Unit tests with vitest and E2E specs with Playwright.
+
+Requirement to Implement:
+ID: ${requirement.id}
+Title: ${requirement.title}
+Problem / Business Value: ${requirement.businessValue}
+Users: ${requirement.users || 'All'}
+User Journey: ${requirement.userJourney || ''}
+Acceptance Criteria:
+${requirement.acceptanceCriteria.map((c, i) => `AC${i + 1}: Given ${c.given} When ${c.when} Then ${c.then}`).join('\n')}
+
+Generate the complete, production-ready TypeScript code files needed to implement this story across:
+1. apps/api/src/modules/... (routes, controllers, services, dtos, unit tests)
+2. Update apps/api/src/app.ts to mount the new router
+3. apps/web/src/app/features/... (component .ts, .html, .scss, services, unit tests)
+4. Update apps/web/src/app/app.routes.ts to add feature route
+5. tests/e2e/specs/${jiraIssueKey}.${requirement.id.toLowerCase()}.spec.ts (Playwright test suite covering all acceptance criteria)
+
+Respond ONLY with a valid JSON array of objects with "path" (relative to workspace root, e.g. "apps/api/src/...") and "content" (string with code). Do not include markdown code block backticks outside the JSON.`;
+
+  const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+  for (const model of models) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.2
+          }
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.warn(`   ⚠️ Gemini ${model} returned ${res.status}: ${errText}`);
+        continue;
+      }
+
+      const data = await res.json();
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) continue;
+
+      const files = JSON.parse(rawText);
+      console.log(`   ✨ Gemini generated ${files.length} code files! Writing to workspace...`);
+
+      for (const file of files) {
+        const fullPath = resolve(rootDir, file.path);
+        mkdirSync(dirname(fullPath), { recursive: true });
+        writeFileSync(fullPath, file.content, 'utf8');
+        console.log(`      📄 Created/Updated: ${file.path}`);
+      }
+      return files;
+    } catch (err) {
+      console.warn(`   ⚠️ Gemini error on ${model}: ${err.message}`);
+    }
+  }
+
+  return [];
+}
+
 async function runSDLC() {
   console.log('\n======================================================');
   console.log('🤖  SDLC MULTI-AGENT LIVE ORCHESTRATOR');
   console.log(`📌  Jira Site: ${jiraBaseUrl} (${jiraEmail})`);
   console.log(`📌  Jira Project: ${jiraProjectKey} | Board: ${env.JIRA_BOARD_ID || '2'}`);
   console.log(`📌  GitHub Repo: ${githubRepo} [Base Branch: ${githubBaseBranch}]`);
+  console.log(`🧠  AI Agent Engine: ${geminiApiKey ? '🟢 Gemini API Active' : '🟡 Offline (No API Key)'}`);
   console.log(`📁  Workspace: ${rootDir}`);
   console.log('======================================================\n');
 
@@ -152,14 +232,25 @@ async function runSDLC() {
   }
 
   const intake = JSON.parse(readFileSync(intakePath, 'utf8'));
-  const requirement = intake.requirements?.pop();
+  const allReqs = intake.requirements || [];
+
+  if (allReqs.length === 0) {
+    console.error('❌ No requirements found in requirements/requirements.md');
+    process.exit(1);
+  }
+
+  // Select requirement: CLI argument (e.g. RQ-002) or latest requirement
+  const requestedId = process.argv[2]?.toUpperCase();
+  const requirement = requestedId
+    ? allReqs.find((r) => r.id.toUpperCase() === requestedId)
+    : allReqs[allReqs.length - 1];
 
   if (!requirement || requirement.readiness !== 'ready-for-business-agent') {
     console.error(`❌ Blocker: Requirement is not ready. Blockers: ${requirement?.blockers?.join(', ')}`);
     process.exit(1);
   }
 
-  console.log(`✅ Intake Validated: [${requirement.id}] ${requirement.title}\n`);
+  console.log(`✅ Target Requirement: [${requirement.id}] ${requirement.title}\n`);
 
   // STEP 2: Business Agent - Create Live Jira Ticket
   console.log('💼 [STEP 2/4] Executing Business Agent (agents/business.md)...');
@@ -220,7 +311,7 @@ async function runSDLC() {
   await transitionJiraIssue(jiraIssueKey, 'Dev Ready');
   console.log(`   ✅ Business Agent Complete. Issue ${jiraIssueKey} is in "Dev Ready".\n`);
 
-  // STEP 3: Development Agent - Branch, Unit Tests, Push, PR, Review
+  // STEP 3: Development Agent - Branch, Gemini Code Gen, Unit Tests, Push, PR, Review
   console.log('💻 [STEP 3/4] Executing Development Agent (agents/development.md)...');
   await transitionJiraIssue(jiraIssueKey, 'In Dev');
 
@@ -234,6 +325,9 @@ async function runSDLC() {
   } catch (err) {
     console.warn(`   ℹ️ Branch notice: ${err.message}`);
   }
+
+  // Generate code via Gemini API
+  await generateCodeWithGemini(requirement, jiraIssueKey);
 
   console.log('   - Enforcing Standards: docs/coding-standards.md');
   console.log('   - Running Unit Tests & Coverage Verification (>=80%)...');
@@ -305,7 +399,7 @@ async function runSDLC() {
 
   await addJiraComment(
     jiraIssueKey,
-    `QA Agent verified test suite.\nAcceptance criteria checked.\nStatus: Ready for Deployment 🚀`
+    `QA Agent verified test suite.\nAll ${requirement.acceptanceCriteria.length} acceptance criteria checked.\nStatus: Ready for Deployment 🚀`
   );
 
   await transitionJiraIssue(jiraIssueKey, 'Deployment Ready');
