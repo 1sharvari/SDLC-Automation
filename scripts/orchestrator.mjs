@@ -260,7 +260,7 @@ Generate the complete, production-ready TypeScript code files across frontend, b
         const data = await res.json();
         const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
         const files = extractJsonArray(rawText);
-        if (files && Array.isArray(files) && files.length >= 6) {
+        if (files && Array.isArray(files) && files.length >= 1) {
           console.log(`   ✨ Gemini generated ${files.length} full-stack code files! Writing to workspace...`);
           for (const file of files) {
             const fullPath = resolve(rootDir, file.path);
