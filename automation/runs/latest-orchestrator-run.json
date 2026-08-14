@@ -1,0 +1,25 @@
+{
+  "timestamp": "2026-08-14T09:29:56.855Z",
+  "requirementId": "RQ-001",
+  "ticketId": "SHOP-101",
+  "branchName": "SHOP-101-user-login",
+  "storyPoints": 5,
+  "currentState": "Deployment Ready",
+  "agentSteps": [
+    {
+      "agent": "Business",
+      "status": "Dev Ready",
+      "details": "Hierarchy and 5 story points estimated"
+    },
+    {
+      "agent": "Development",
+      "status": "QA Ready",
+      "details": "Angular Login UI + Node Auth API + unit tests >=80%"
+    },
+    {
+      "agent": "QA",
+      "status": "Deployment Ready",
+      "details": "Playwright E2E tests verified against acceptance criteria"
+    }
+  ]
+}

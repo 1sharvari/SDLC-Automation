@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-14T09:42:17.017Z",
+  "mode": "live",
+  "source": "requirements/requirements.md",
+  "checksum": "ba95abe6d6bb662be2c67a81520cbfa34f60ddd8f039e8dcccc05191ba416080",
+  "nextAgent": "Business",
+  "requirements": [
+    {
+      "id": "RQ-001",
+      "title": "User Login Authentication",
+      "businessValue": "Allow registered users to securely authenticate using username and password to protect restricted application routes.",
+      "users": "Registered User, Admin",
+      "userJourney": "User navigates to application -> redirected to `/login` if unauthenticated -> enters credentials -> clicks login -> redirected to `/home`.",
+      "priority": "Must",
+      "acceptanceCriteria": [
+        {
+          "given": "an unauthenticated user",
+          "when": "navigating to `/home`",
+          "then": "redirect to `/login`."
+        },
+        {
+          "given": "empty username or password",
+          "when": "clicking Login",
+          "then": "show validation error messages."
+        },
+        {
+          "given": "valid credentials Admin and Admin@123",
+          "when": "submitting the login form",
+          "then": "authenticate the user, save user state in localStorage, and navigate to `/home`."
+        },
+        {
+          "given": "invalid credentials",
+          "when": "submitting the login form",
+          "then": "display an error message and remain on `/login`."
+        }
+      ],
+      "readiness": "ready-for-business-agent",
+      "blockers": [],
+      "proposedStoryPoints": 5,
+      "proposedLabels": [
+        "rq-001",
+        "angular",
+        "node",
+        "e2e"
+      ],
+      "proposedAction": "create-or-update-jira-hierarchy"
+    }
+  ]
+}
