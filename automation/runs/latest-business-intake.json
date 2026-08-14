@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-14T12:32:33.955Z",
+  "generatedAt": "2026-08-14T17:18:23.783Z",
   "mode": "live",
   "source": "requirements/requirements.md",
-  "checksum": "f9e3869a650becc451493e73f8201e1bf03494a01ed69812f798f51b092c2831",
+  "checksum": "ad1be41629462ae1f526a487c3febdb0590f1e1430985baecf9122e2df5cfc11",
   "nextAgent": "Business",
   "requirements": [
     {
