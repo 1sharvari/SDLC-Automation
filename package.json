@@ -1,0 +1,26 @@
+{
+  "name": "sdlc-automation",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/api",
+    "tests/e2e"
+  ],
+  "scripts": {
+    "orchestrator": "node scripts/orchestrator.mjs",
+    "sdlc:run": "node scripts/orchestrator.mjs",
+    "requirements:check": "node scripts/requirements-watcher.mjs --once",
+    "requirements:watch": "node scripts/requirements-watcher.mjs",
+    "api": "npm --workspace sdlc-api run dev",
+    "web": "npm --workspace sdlc-web start",
+    "test:unit": "npm --workspace sdlc-api test && npm --workspace sdlc-web test -- --watch=false",
+    "test:e2e": "npm --workspace sdlc-e2e test"
+  },
+  "engines": {
+    "node": ">=18.20"
+  },
+  "devDependencies": {
+    "mcp-remote": "^0.1.38"
+  }
+}
