@@ -20,7 +20,6 @@
   - Given an unauthenticated user When navigating to `/home` Then redirect to `/login`.
   - Given empty username or password When clicking Login Then show validation error messages.
   - Given valid credentials Admin and Admin@123 When submitting the login form Then authenticate the user, save user state in localStorage, and navigate to `/home`.
-  - Given invalid credentials When submitting the login form Then display an error message and remain on `/login`.
 - **Out of scope:** OAuth, backend database, self-service password reset.
 - **Dependencies / assumptions:** Angular frontend (`apps/web`) and Node API (`apps/api`).
 - **Priority:** Must
